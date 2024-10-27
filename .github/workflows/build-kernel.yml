@@ -1,0 +1,38 @@
+name: Build WSL2 Kernel
+
+on:
+  push:
+    branches: [ linux-msft-wsl-6.6.y ]
+  pull_request:
+    branches: [ linux-msft-wsl-6.6.y ]
+  workflow_dispatch:    # Allows manual triggering
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0   # Fetch all history for proper versioning
+        
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential flex bison dwarves libssl-dev libelf-dev cpio
+        
+    - name: Build WSL2 kernel
+      run: |
+        make KCONFIG_CONFIG=Microsoft/config-wsl
+
+    - name: Prepare artifacts
+      run: |
+        mkdir -p artifacts
+        cp arch/x86/boot/bzImage artifacts/bzImage
+        
+    - name: Upload kernel artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: wsl2-kernel
+        path: artifacts/bzImage
+        retention-days: 90  # Keep the artifact for 90 days
